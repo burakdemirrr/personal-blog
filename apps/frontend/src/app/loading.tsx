@@ -11,6 +11,6 @@ const Loading = memo(() => {
   );
 });
 
-Loading.displayName = 'Loading';
+Loading.displayName =  'Loading';
 
 export default Loading;
