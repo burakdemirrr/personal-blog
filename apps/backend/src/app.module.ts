@@ -7,7 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { PostsModule } from './posts/posts.module';
 import { TypeOrmModule as Feature } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
+import { Post } from './posts/post.entity';
 import { SeedService } from './users/seed.service';
+import { SeedPostsService } from './posts/seed-posts.service';
 import { UploadsController } from './uploads/uploads.controller';
 
 @Module({
@@ -33,11 +35,11 @@ import { UploadsController } from './uploads/uploads.controller';
         ],
       },
     }),
-    Feature.forFeature([User]),
+    Feature.forFeature([User, Post]),
     AuthModule,
     PostsModule
   ],
   controllers: [AppController, UploadsController],
-  providers: [AppService, SeedService]
+  providers: [AppService, SeedService, SeedPostsService]
 })
 export class AppModule {}
