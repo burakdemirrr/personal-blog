@@ -12,7 +12,7 @@ export class SeedService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     const adminEmail: string = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword: string = process.env.ADMIN_PASSWORD || 'changeme123';
+    const adminPassword: string = process.env.ADMIN_PASSWORD || 'admin123';
     const existing: User | null = await this.userRepository.findOne({ where: { email: adminEmail } });
     if (existing) {
       return;
@@ -20,7 +20,7 @@ export class SeedService implements OnApplicationBootstrap {
     const passwordHash: string = await bcrypt.hash(adminPassword, 10);
     const user: User = this.userRepository.create({ email: adminEmail, passwordHash, role: 'admin' });
     await this.userRepository.save(user);
-    this.logger.log(`Seeded admin user ${adminEmail}`);
+    this.logger.log(`Seeded admin user: ${adminEmail} (password: ${adminPassword})`);
   }
 }
 
