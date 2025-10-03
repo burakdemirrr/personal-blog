@@ -1,0 +1,21 @@
+{
+  "name": "personal-website",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal blog monorepo with Next.js frontend and NestJS backend",
+  "packageManager": "pnpm@9.9.0",
+  "scripts": {
+    "dev": "pnpm -r --filter ./apps/* run dev",
+    "build": "pnpm -r --filter ./apps/* run build",
+    "start": "pnpm -r --filter ./apps/* run start",
+    "lint": "pnpm -r --filter ./apps/* run lint",
+    "test": "pnpm -r --filter ./apps/* run test"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

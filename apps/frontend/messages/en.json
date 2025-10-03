@@ -1,0 +1,15 @@
+{
+    "HomePage": {
+      "loader": "Loading...",
+      "posts": "Posts"
+    },
+    "Layout": {
+      "blog": "Blog",
+      "about": "About"
+    },
+    "Theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System"
+    }
+  }

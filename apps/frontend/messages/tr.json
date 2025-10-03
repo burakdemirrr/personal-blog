@@ -1,0 +1,15 @@
+{
+    "HomePage": {
+      "loader": "Yükleniyor..",
+      "posts" : "Yazılar"
+    },
+    "Layout":{
+        "blog":"Yazılar",
+        "about":"Hakkında"
+    },
+    "Theme":{
+        "dark":"Karanlık",
+        "light":"Aydınlık",
+        "system":"Sistem"
+    }
+  }
