@@ -5,11 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { PostsModule } from './posts/posts.module';
-import { TypeOrmModule as Feature } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
-import { Post } from './posts/post.entity';
 import { SeedService } from './users/seed.service';
-import { SeedPostsService } from './posts/seed-posts.service';
 import { UploadsController } from './uploads/uploads.controller';
 
 @Module({
@@ -35,11 +32,11 @@ import { UploadsController } from './uploads/uploads.controller';
         ],
       },
     }),
-    Feature.forFeature([User, Post]),
+    TypeOrmModule.forFeature([User]),
     AuthModule,
     PostsModule
   ],
   controllers: [AppController, UploadsController],
-  providers: [AppService, SeedService, SeedPostsService]
+  providers: [AppService, SeedService]
 })
 export class AppModule {}

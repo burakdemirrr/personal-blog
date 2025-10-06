@@ -48,9 +48,19 @@ const LoadingSpinner = memo(() => {
 
 LoadingSpinner.displayName = 'LoadingSpinner';
 
+// Extract first image URL from markdown content
+const extractFirstImage = (content: string): string | null => {
+  if (!content) return null;
+  // Match markdown image syntax: ![alt](url)
+  const imageRegex = /!\[.*?\]\((.*?)\)/;
+  const match = content.match(imageRegex);
+  return match ? match[1] : null;
+};
+
 // Memoized post item component
 const PostItem = memo(({ post }: { post: any }) => {
   const formattedDate = useMemo(() => formatDate(post.publishedAt), [post.publishedAt]);
+  const firstImage = useMemo(() => extractFirstImage(post.content), [post.content]);
   
   return (
     <motion.li
@@ -60,15 +70,15 @@ const PostItem = memo(({ post }: { post: any }) => {
       layout
     >
       <time 
-        className="text-sm opacity-70" 
+        className="text-sm opacity-50" 
         dateTime={post.publishedAt ?? undefined}
       >
         {formattedDate}
       </time>
-      <h2 className="text-xl font-medium mt-1">
+      <h2 className="text-xl font-medium ">
         <Link 
           href={`/post/${post.slug}`} 
-          className="underline text-[#2a7ae2] text-[24px] hover:opacity-80 transition-opacity" 
+          className="underline-offset-[5px] text-[#2a7ae2] text-[24px] font-thin tracking-wide hover:underline " 
           tabIndex={0} 
           aria-label={`Read ${post.title}`}
           prefetch={true}
@@ -76,6 +86,16 @@ const PostItem = memo(({ post }: { post: any }) => {
           {post.title}
         </Link>
       </h2>
+      {firstImage && (
+        <div className="mt-3 mb-2">
+          <img 
+            src={firstImage} 
+            alt={post.title}
+            className="rounded-lg max-w-full h-auto max-h-[500px] object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
       {post.summary && (
         <p className="text-[14px] opacity-80 mt-1">{post.summary}</p>
       )}

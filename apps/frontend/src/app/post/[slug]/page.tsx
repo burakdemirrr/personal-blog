@@ -134,7 +134,15 @@ const PostDetailPage = (): JSX.Element => {
         )}
 
         <motion.div
-          className="prose dark:prose-invert max-w-none text-base leading-relaxed"
+          className="prose prose-lg dark:prose-invert max-w-none 
+                     prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100
+                     prose-p:text-zinc-700 dark:prose-p:text-zinc-300
+                     prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100
+                     prose-code:text-zinc-900 dark:prose-code:text-zinc-100
+                     prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-800
+                     prose-a:text-blue-600 dark:prose-a:text-blue-400
+                     prose-img:rounded-lg prose-img:shadow-md
+                     text-base leading-relaxed"
           variants={itemVariants}
         >
           <Suspense fallback={<div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded"></div>}>

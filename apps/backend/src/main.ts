@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import * as express from 'express';
-import compression from 'compression';
+const compression = require('compression');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { 
@@ -49,5 +49,7 @@ async function bootstrap() {
   
   const port: number = process.env.PORT ? Number(process.env.PORT) : 4000;
   await app.listen(port);
+  console.log(`🚀 Backend is running on http://localhost:${port}`);
+  console.log(`📁 Uploads directory: ${uploadsPath}`);
 }
 bootstrap();
