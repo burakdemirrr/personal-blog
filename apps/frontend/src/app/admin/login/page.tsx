@@ -50,6 +50,17 @@ const AdminLoginPage = (): JSX.Element => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string>("");
 	const [login] = useLoginMutation();
+
+	const decodeJwtRole = useCallback((token: string): 'admin' | 'user' => {
+		try {
+			const [, payloadBase64] = token.split('.');
+			const json = typeof atob === 'function' ? atob(payloadBase64) : Buffer.from(payloadBase64, 'base64').toString('utf-8');
+			const payload = JSON.parse(json) as { role?: 'admin' | 'user' };
+			return payload.role === 'admin' ? 'admin' : 'user';
+		} catch {
+			return 'user';
+		}
+	}, []);
 	
 	const {
 		handleSubmit,
@@ -67,14 +78,15 @@ const AdminLoginPage = (): JSX.Element => {
 		
 		try {
 			const res = await login(data).unwrap();
-			dispatch(loginSuccess({ token: res.accessToken, role: "admin" }));
+			const role = decodeJwtRole(res.accessToken);
+			dispatch(loginSuccess({ token: res.accessToken, role }));
 			router.replace("/admin/posts");
 		} catch (err: any) {
 			setError(err?.data?.message || "Login failed. Check email and password.");
 		} finally {
 			setIsLoading(false);
 		}
-	}, [isLoading, login, dispatch, router]);
+	}, [isLoading, login, dispatch, router, decodeJwtRole]);
 
 	return (
 		<motion.div 

@@ -7,6 +7,21 @@ const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['framer-motion', 'react-icons'],
+    // Note: cacheComponents requires Next.js canary version
+    // Uncomment below when upgrading to canary
+    // cacheComponents: true,
+    // cacheLife: {
+    //   posts: {
+    //     stale: 60,
+    //     revalidate: 300,
+    //     expire: 3600,
+    //   },
+    //   blog: {
+    //     stale: 30,
+    //     revalidate: 60,
+    //     expire: 600,
+    //   },
+    // },
   },
 
   // Optimize images
@@ -18,8 +33,7 @@ const nextConfig = {
   // Enable compression
   compress: true,
 
-  // Optimize bundle
-  swcMinify: true,
+  // swcMinify is now default in Next.js 15, removed deprecated option
 
   // Enable static optimization
   trailingSlash: false,

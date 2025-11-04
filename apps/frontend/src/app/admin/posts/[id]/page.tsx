@@ -6,6 +6,7 @@ import { useGetAdminPostsQuery, useUpdatePostMutation } from "@/services/api";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { TiptapEditor } from "@/components/tiptap-editor";
 
 type FormInput = {
   title: string;
@@ -22,7 +23,8 @@ const EditPostPage = (): JSX.Element => {
   const { data } = useGetAdminPostsQuery();
   const current = useMemo(() => (data ?? []).find((p) => p.id === id), [data, id]);
   const [updatePost, { isLoading }] = useUpdatePostMutation();
-  const { register, handleSubmit, reset } = useForm<FormInput>();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<FormInput>();
+  const contentValue = watch('content');
 
   useEffect(() => {
     if (current) {
@@ -38,6 +40,9 @@ const EditPostPage = (): JSX.Element => {
 
   const handleSave = useCallback(async (data: FormInput): Promise<void> => {
     await updatePost({ id, body: data }).unwrap();
+    // Invalidate cache after successful update
+    const { invalidateCacheAfterMutation } = await import('@/lib/cache-invalidation');
+    await invalidateCacheAfterMutation('update', data.slug);
     router.replace('/admin/posts');
   }, [id, updatePost, router]);
 
@@ -56,8 +61,12 @@ const EditPostPage = (): JSX.Element => {
           <input id="slug" {...register('slug')} className="w-full rounded-md border px-3 py-2" />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="content">Content</label>
-          <textarea id="content" {...register('content')} className="w-full rounded-md border px-3 py-2 h-40" />
+          <label className="block text-sm font-medium mb-1">Content</label>
+          <TiptapEditor 
+            content={contentValue || ''} 
+            onChange={(html) => setValue('content', html)} 
+            placeholder="Write your post content..."
+          />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="summary">Summary</label>

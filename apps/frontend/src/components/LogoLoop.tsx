@@ -20,7 +20,7 @@ export type LogoItem =
     };
 
 export interface LogoLoopProps {
-  logos: LogoItem[];
+  logos: readonly LogoItem[];
   speed?: number;
   direction?: 'left' | 'right';
   width?: number | string;

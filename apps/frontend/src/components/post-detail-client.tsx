@@ -1,0 +1,113 @@
+"use client";
+
+import { JSX, memo, useMemo } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import parse from 'html-react-parser';
+import type { Post } from '@/lib/cached-api';
+
+// Memoize date formatting function
+const formatDate = (iso: string | null): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Optimize animation variants - remove complex easing for better performance
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: "easeOut",
+      staggerChildren: 0.1,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.2,
+      ease: "easeOut"
+    }
+  },
+} as const;
+
+// Memoized back link component
+const BackLink = memo(() => (
+  <Link
+    href="/"
+    className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline mb-6 inline-block"
+    prefetch={true}
+  >
+    ← Back to blog
+  </Link>
+));
+
+BackLink.displayName = 'BackLink';
+
+interface PostDetailClientProps {
+  post: Post;
+}
+
+export function PostDetailClient({ post }: PostDetailClientProps): JSX.Element {
+  // Memoize formatted date to prevent recalculation
+  const formattedDate = useMemo(() =>
+    post.publishedAt ? formatDate(post.publishedAt) : '',
+    [post.publishedAt]
+  );
+
+  return (
+    <motion.div
+      className="flex justify-center px-2 min-h-[70vh] hide-scrollbar"
+      initial="hidden"
+      animate="visible"
+      variants={cardVariants}
+    >
+      <article className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:border dark:border-zinc-800 rounded-2xl p-6">
+        <motion.div variants={itemVariants}>
+          <BackLink />
+        </motion.div>
+
+        <motion.h1
+          className="text-3xl md:text-4xl font-bold leading-tight mb-3 text-zinc-900 dark:text-zinc-100"
+          variants={itemVariants}
+        >
+          {post.title}
+        </motion.h1>
+
+        {formattedDate && (
+          <motion.time
+            className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 block"
+            variants={itemVariants}
+            dateTime={post.publishedAt || undefined}
+          >
+            {formattedDate}
+          </motion.time>
+        )}
+
+        <motion.div
+          className="prose prose-lg dark:prose-invert max-w-none 
+                     prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100
+                     prose-p:text-zinc-700 dark:prose-p:text-zinc-300
+                     prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100
+                     prose-code:text-zinc-900 dark:prose-code:text-zinc-100
+                     prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-800
+                     prose-a:text-blue-600 dark:prose-a:text-blue-400
+                     prose-img:rounded-lg prose-img:shadow-md
+                     text-base leading-relaxed"
+          variants={itemVariants}
+        >
+          {parse(post.content)}
+        </motion.div>
+      </article>
+    </motion.div>
+  );
+}
+

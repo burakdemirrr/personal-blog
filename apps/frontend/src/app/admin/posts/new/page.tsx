@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { ImageUploader } from "@/components/image-uploader";
+import { TiptapEditor } from "@/components/tiptap-editor";
 
 const schema = z.object({
   title: z.string().min(3),
@@ -25,13 +25,11 @@ const NewPostPage = (): JSX.Element => {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormInput>({ resolver: zodResolver(schema) });
   const contentValue = watch('content');
 
-  const handleInsertImage = useCallback((url: string): void => {
-    const toInsert = `\n![](${url})\n`;
-    setValue('content', `${contentValue ?? ''}${toInsert}`);
-  }, [contentValue, setValue]);
-
   const handleCreate = useCallback(async (data: FormInput): Promise<void> => {
     await createPost(data).unwrap();
+    // Invalidate cache after successful create
+    const { invalidateCacheAfterMutation } = await import('@/lib/cache-invalidation');
+    await invalidateCacheAfterMutation('create');
     router.replace('/admin/posts');
   }, [createPost, router]);
 
@@ -48,11 +46,12 @@ const NewPostPage = (): JSX.Element => {
           <input id="slug" {...register('slug')} className="w-full rounded-md border px-3 py-2" aria-invalid={Boolean(errors.slug)} />
         </div>
         <div>
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium mb-1" htmlFor="content">Content</label>
-            <ImageUploader onUploaded={handleInsertImage} />
-          </div>
-          <textarea id="content" {...register('content')} className="w-full rounded-md border px-3 py-2 h-40" aria-invalid={Boolean(errors.content)} />
+          <label className="block text-sm font-medium mb-1">Content</label>
+          <TiptapEditor 
+            content={contentValue || ''} 
+            onChange={(html) => setValue('content', html)} 
+            placeholder="Write your post content..."
+          />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="summary">Summary</label>

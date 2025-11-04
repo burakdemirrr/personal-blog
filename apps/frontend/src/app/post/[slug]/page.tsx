@@ -1,159 +1,78 @@
-"use client";
+import { JSX, Suspense } from 'react';
+import { notFound } from 'next/navigation';
+import { getPostBySlug } from '@/lib/cached-api';
+import { PostDetailClient } from '@/components/post-detail-client';
+import type { Metadata } from 'next';
 
-import { JSX, memo, useMemo, Suspense } from 'react';
-import { useParams } from 'next/navigation';
-import { useGetPostBySlugQuery } from '@/services/api';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
-
-// Lazy load ReactMarkdown for better performance
-const ReactMarkdown = dynamic(() => import('react-markdown'), {
-  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded"></div>,
-  ssr: false
-});
-
-// Memoize date formatting function
-const formatDate = (iso: string | null): string => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-};
-
-// Optimize animation variants - remove complex easing for better performance
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut",
-      staggerChildren: 0.1,
-    },
-  },
-} as const;
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.2,
-      ease: "easeOut"
-    }
-  },
-} as const;
-
-// Memoized loading component
-const LoadingSpinner = memo(() => (
-  <div className="py-20 text-center">
-    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">Loading...</p>
-  </div>
-));
-
-LoadingSpinner.displayName = 'LoadingSpinner';
-
-// Memoized back link component
-const BackLink = memo(() => (
-  <Link
-    href="/"
-    className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline mb-6 inline-block"
-    prefetch={true}
-  >
-    ← Back to blog
-  </Link>
-));
-
-BackLink.displayName = 'BackLink';
-
-const PostDetailPage = (): JSX.Element => {
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug;
-  
-  // Skip query if slug is not available
-  const { data, isLoading, error } = useGetPostBySlugQuery(slug!, {
-    skip: !slug
-  });
-
-  // Memoize formatted date to prevent recalculation
-  const formattedDate = useMemo(() =>
-    data?.publishedAt ? formatDate(data.publishedAt) : '',
-    [data?.publishedAt]
+// Loading component for Suspense fallback
+function LoadingSkeleton() {
+  return (
+    <div className="flex justify-center px-2 min-h-[70vh]">
+      <div className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:border dark:border-zinc-800 rounded-2xl p-6 space-y-4">
+        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-10 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="space-y-2 pt-4">
+          <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        </div>
+      </div>
+    </div>
   );
+}
+
+// Generate metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+    };
+  }
+
+  return {
+    title: post.title,
+    description: post.summary || post.title,
+    openGraph: {
+      title: post.title,
+      description: post.summary || undefined,
+      type: 'article',
+      publishedTime: post.publishedAt || undefined,
+    },
+  };
+}
+
+// Server Component - fetches data with caching
+export default async function PostDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<JSX.Element> {
+  const { slug } = await params;
 
   if (!slug) {
-    return (
-      <div className="py-20 text-center text-lg text-red-500 dark:text-red-400">
-        Invalid post URL
-      </div>
-    );
+    notFound();
   }
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  // This will be cached according to the 'blog' cacheLife profile
+  const post = await getPostBySlug(slug);
 
-  if (error || !data) {
-    return (
-      <div className="py-20 text-center text-lg text-red-500 dark:text-red-400">
-        Post not found
-      </div>
-    );
+  if (!post) {
+    notFound();
   }
 
   return (
-    <motion.div
-      className="flex justify-center px-2 min-h-[70vh] hide-scrollbar"
-      initial="hidden"
-      animate="visible"
-      variants={cardVariants}
-    >
-      <article className="w-full max-w-[1000px] bg-white dark:bg-zinc-900 dark:border dark:border-zinc-800 rounded-2xl p-6">
-        <motion.div variants={itemVariants}>
-          <BackLink />
-        </motion.div>
-
-        <motion.h1
-          className="text-3xl md:text-4xl font-bold leading-tight mb-3 text-zinc-900 dark:text-zinc-100"
-          variants={itemVariants}
-        >
-          {data.title}
-        </motion.h1>
-
-        {formattedDate && (
-          <motion.time
-            className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 block"
-            variants={itemVariants}
-            dateTime={data.publishedAt || undefined}
-          >
-            {formattedDate}
-          </motion.time>
-        )}
-
-        <motion.div
-          className="prose prose-lg dark:prose-invert max-w-none 
-                     prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100
-                     prose-p:text-zinc-700 dark:prose-p:text-zinc-300
-                     prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100
-                     prose-code:text-zinc-900 dark:prose-code:text-zinc-100
-                     prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-800
-                     prose-a:text-blue-600 dark:prose-a:text-blue-400
-                     prose-img:rounded-lg prose-img:shadow-md
-                     text-base leading-relaxed"
-          variants={itemVariants}
-        >
-          <Suspense fallback={<div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded"></div>}>
-            <ReactMarkdown>{data.content}</ReactMarkdown>
-          </Suspense>
-        </motion.div>
-      </article>
-    </motion.div>
+    <Suspense fallback={<LoadingSkeleton />}>
+      <PostDetailClient post={post} />
+    </Suspense>
   );
-};
-
-export default PostDetailPage;
+}
 
 

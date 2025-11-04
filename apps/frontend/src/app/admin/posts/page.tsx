@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { AdminGuard } from "@/components/admin-guard";
 import { useDeletePostMutation, useGetAdminPostsQuery } from "@/services/api";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store/store";
 import { JSX, useState, useCallback, memo, useMemo } from "react";
 import {
   Dialog,
@@ -54,20 +56,36 @@ const PostRow = memo(({
 PostRow.displayName = 'PostRow';
 
 const AdminPostsPage = (): JSX.Element => {
-  const { data, isLoading } = useGetAdminPostsQuery();
+  const { data, isLoading, error } = useGetAdminPostsQuery();
+  const errorMessage = (() => {
+    if (!error) return '';
+    // RTK Query error shapes
+    const anyErr = error as any;
+    if (anyErr?.status === 401 || anyErr?.originalStatus === 401) return 'Unauthorized (401). Please log in again.';
+    if (anyErr?.status === 403 || anyErr?.originalStatus === 403) return 'Forbidden (403). Admin access required.';
+    if (anyErr?.status === 'PARSING_ERROR') return 'Response parsing error. Check API base URL and response.';
+    if (anyErr?.status === 'FETCH_ERROR') return 'Network error. Is the backend running and CORS allowed?';
+    if (typeof anyErr?.status === 'number') return `Request failed (${anyErr.status}).`;
+    return 'Failed to load posts. Please try again.';
+  })();
   const [deletePost] = useDeletePostMutation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<string>('');
+  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
 
   const handleDelete = useCallback(async () => {
     if (selectedId) {
       await deletePost(selectedId).unwrap();
+      // Invalidate cache after successful delete
+      const { invalidateCacheAfterMutation } = await import('@/lib/cache-invalidation');
+      const post = (data ?? []).find(p => p.id === selectedId);
+      await invalidateCacheAfterMutation('delete', post?.slug);
       setDialogOpen(false);
       setSelectedId(null);
       setSelectedTitle('');
     }
-  }, [selectedId, deletePost]);
+  }, [selectedId, deletePost, data]);
 
   const handleOpenDialog = useCallback((id: string, title: string) => {
     setDialogOpen(true);
@@ -90,6 +108,15 @@ const AdminPostsPage = (): JSX.Element => {
         <Link className="rounded-md bg-black text-white px-3 py-2" href="/admin/posts/new" tabIndex={0} aria-label="Create post">New Post</Link>
       </div>
       {isLoading && <p>Loading...</p>}
+      {!isLoading && error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="font-medium mb-1">{errorMessage}</div>
+          {typeof (error as any)?.data?.message === 'string' && (
+            <div className="text-xs opacity-80">{(error as any).data.message}</div>
+          )}
+          {!isAuthenticated && <div className="text-xs opacity-80">You are not authenticated. Please log in.</div>}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -101,6 +128,11 @@ const AdminPostsPage = (): JSX.Element => {
             </tr>
           </thead>
           <tbody>
+            {(!isLoading && !error && (data ?? []).length === 0) && (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-muted-foreground">No posts yet.</td>
+              </tr>
+            )}
             {(data ?? []).map((p) => (
               <PostRow key={p.id} post={p} onDelete={handleOpenDialog} />
             ))}
